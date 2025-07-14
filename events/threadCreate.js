@@ -15,7 +15,7 @@ module.exports = {
 		const message = await thread.fetchStarterMessage();
 		const embed = await message.embeds[0];
 		const discordId = embed.data.footer.text.split("-", 2)[0];
-		const rid = embed.data.footer.text.split("-", 2)[1];
+		const playerId = embed.data.footer.text.split("-", 2)[1];
 
 		if (!embed) return;
 
@@ -32,8 +32,9 @@ module.exports = {
 			"✅": 0,
 			"❌": 0,
 			"Discord ID": discordId,
+			"Discord Name": embed.data.author.name,
 			"Server ID": guildId,
-			RID: rid,
+			"Player ID": playerId,
 		};
 
 		const success = await lark.createRecord(
