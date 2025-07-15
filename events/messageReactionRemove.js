@@ -27,7 +27,7 @@ module.exports = {
 
 		const response = await lark.listRecords(
 			process.env.FEEDBACK_POOL_BASE,
-			process.env.SUGGESTIONS_TABLE,
+			process.env.SUGGESTION_TABLE,
 			{
 				filter:
 					'AND(CurrentValue.[Title] = "' +
@@ -45,7 +45,7 @@ module.exports = {
 
 		const success = await lark.updateRecord(
 			process.env.FEEDBACK_POOL_BASE,
-			process.env.SUGGESTIONS_TABLE,
+			process.env.SUGGESTION_TABLE,
 			response.items[0].record_id,
 			{ fields: { "✅": acceptCount, "❌": rejectCount } }
 		);
