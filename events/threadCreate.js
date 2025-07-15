@@ -39,7 +39,7 @@ module.exports = {
 
 		const success = await lark.createRecord(
 			process.env.FEEDBACK_POOL_BASE,
-			process.env.SUGGESTIONS_TABLE,
+			process.env.SUGGESTION_TABLE,
 			{ fields: data }
 		);
 		if (!success) console.log("Failed to create record in lark");

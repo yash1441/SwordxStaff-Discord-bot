@@ -100,7 +100,6 @@ async function createRecord(
 	if (response && response.data.code === 0) {
 		return response.data.data;
 	} else {
-		console.log(response);
 		return false;
 	}
 }
