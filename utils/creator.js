@@ -8,6 +8,7 @@ const {
 	TextInputStyle,
 	bold,
 	inlineCode,
+	MessageFlags,
 } = require("discord.js");
 const lark = require("./lark");
 require("dotenv").config();
@@ -25,7 +26,7 @@ const topicOptions = [
 ];
 
 async function submitContent(interaction, platform) {
-	await interaction.deferReply({ ephemeral: true });
+	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	const submissionData = {
 		guildId: interaction.guildId,
@@ -98,7 +99,7 @@ async function submitContent(interaction, platform) {
 
 		await botReply.modalReply.reply({
 			content: bold(submissionData.topic),
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 
 		await botReply.modalReply.deleteReply();

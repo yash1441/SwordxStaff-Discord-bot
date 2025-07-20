@@ -39,6 +39,7 @@ module.exports = {
 		await interaction.reply({
 			content: "Please select the platform for your content submission:",
 			components: [platformSelectMenuRow],
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };
