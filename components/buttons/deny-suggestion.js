@@ -1,4 +1,4 @@
-const { EmbedBuilder, userMention } = require("discord.js");
+const { EmbedBuilder, userMention, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
 		name: "deny-suggestion",
 	},
 	async execute(interaction) {
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const embed = interaction.message.embeds[0];
 

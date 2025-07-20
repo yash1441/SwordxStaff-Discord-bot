@@ -1,4 +1,10 @@
-const { EmbedBuilder, userMention, hyperlink, bold } = require("discord.js");
+const {
+	EmbedBuilder,
+	userMention,
+	hyperlink,
+	bold,
+	MessageFlags,
+} = require("discord.js");
 require("dotenv").config();
 
 module.exports = {
@@ -7,7 +13,7 @@ module.exports = {
 		name: "approve-suggestion",
 	},
 	async execute(interaction) {
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const embed = interaction.message.embeds[0];
 

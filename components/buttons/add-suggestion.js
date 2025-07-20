@@ -14,6 +14,7 @@ const {
 	codeBlock,
 	channelMention,
 	userMention,
+	MessageFlags,
 } = require("discord.js");
 require("dotenv").config();
 
@@ -23,7 +24,7 @@ module.exports = {
 		name: "add-suggestion",
 	},
 	async execute(interaction) {
-		await interaction.deferReply({ ephemeral: true });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const channel = await interaction.client.channels.fetch(
 			process.env.VOTE_SUGGESTION_ID
@@ -115,7 +116,7 @@ module.exports = {
 
 			await modalReply.reply({
 				content: bold(modal.data.title),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 			await modalReply.deleteReply();
