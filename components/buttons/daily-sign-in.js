@@ -13,6 +13,9 @@ module.exports = {
 		name: "daily-sign-in",
 	},
 	async execute(interaction) {
+		await interaction.deferReply({
+			flags: MessageFlags.Ephemeral,
+		});
 		const userId = interaction.user.id;
 		const now = new Date();
 
@@ -26,7 +29,7 @@ module.exports = {
 		if (lastClaim) {
 			const diffDays = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24));
 			if (diffDays === 0) {
-				return interaction.reply({
+				return interaction.editReply({
 					content: "You have already signed in today!",
 					flags: MessageFlags.Ephemeral,
 				});
@@ -68,7 +71,7 @@ module.exports = {
 			lastClaim: now.toISOString(),
 		});
 
-		await interaction.reply({
+		await interaction.editReply({
 			content: `Sign-in successful!\nStreak: ${streak}\nReward: ${reward}`,
 			flags: MessageFlags.Ephemeral,
 		});
