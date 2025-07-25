@@ -1,6 +1,7 @@
 const { MessageFlags, inlineCode } = require("discord.js");
 const lark = require("../../utils/lark");
 const { Keyv } = require("keyv");
+const path = require("path");
 require("dotenv").config();
 
 const dbPath = path.join(__dirname, "../../db/signin.sqlite");
