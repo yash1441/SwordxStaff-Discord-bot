@@ -5,6 +5,8 @@ require("dotenv").config();
 
 const keyv = new Keyv(`sqlite://${__dirname}/../../db/signin.sqlite`);
 
+keyv.on("error", (err) => console.error("Keyv connection error:", err));
+
 module.exports = {
 	cooldown: 10,
 	data: {
