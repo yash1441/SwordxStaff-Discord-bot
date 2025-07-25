@@ -1,10 +1,9 @@
 const { MessageFlags } = require("discord.js");
 const lark = require("../../utils/lark");
-const Keyv = require("keyv");
-const KeyvSqlite = require("@keyv/sqlite");
+const { Keyv } = require("keyv");
 require("dotenv").config();
 
-const keyv = new Keyv(new KeyvSqlite(`sqlite://signin.sqlite`));
+const keyv = new Keyv(`sqlite://signin.sqlite`);
 
 keyv.on("error", (err) => console.error("Keyv connection error:", err));
 
