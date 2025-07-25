@@ -39,8 +39,8 @@ module.exports = {
 
 		// Find available reward for this streak from Lark
 		const rewards = await lark.listRecords(
-			process.env.DAILY_REWARD_BASE,
-			process.env.DAILY_REWARD_TABLE,
+			process.env.DAILY_REWARDS_BASE,
+			process.env.DAILY_REWARDS_TABLE,
 			{
 				filter: `AND(CurrentValue.[Day]=${streak}, CurrentValue.[Discord ID]="")`,
 			}
@@ -51,8 +51,8 @@ module.exports = {
 			reward = rewards.items[0].fields.Reward;
 			// Mark reward as claimed in Lark
 			await lark.updateRecord(
-				process.env.DAILY_REWARD_BASE,
-				process.env.DAILY_REWARD_TABLE,
+				process.env.DAILY_REWARDS_BASE,
+				process.env.DAILY_REWARDS_TABLE,
 				rewards.items[0].recordId,
 				{
 					fields: { "Discord ID": userId },
