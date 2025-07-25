@@ -3,7 +3,8 @@ const lark = require("../../utils/lark");
 const { Keyv } = require("keyv");
 require("dotenv").config();
 
-const keyv = new Keyv(`sqlite://signin.sqlite`);
+const dbPath = path.join(__dirname, "../../db/signin.sqlite");
+const keyv = new Keyv(`sqlite://${dbPath}`);
 
 keyv.on("error", (err) => console.error("Keyv connection error:", err));
 
