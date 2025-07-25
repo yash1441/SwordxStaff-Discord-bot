@@ -1,4 +1,4 @@
-const { MessageFlags } = require("discord.js");
+const { MessageFlags, inlineCode } = require("discord.js");
 const lark = require("../../utils/lark");
 const { Keyv } = require("keyv");
 require("dotenv").config();
@@ -29,8 +29,22 @@ module.exports = {
 		if (lastClaim) {
 			const diffDays = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24));
 			if (diffDays === 0) {
+				// Fetch today's reward for user's current streak
+				const rewards = await lark.listRecords(
+					process.env.DAILY_REWARDS_BASE,
+					process.env.DAILY_REWARDS_TABLE,
+					{
+						filter: `AND(CurrentValue.[Day]=${userRecord.streak}, CurrentValue.[Discord ID]="${userId}")`,
+					}
+				);
+
+				let rewardMsg = "No rewards available for today.";
+				if (rewards.total && rewards.items.length > 0) {
+					rewardMsg = inlineCode(rewards.items[0].fields.Reward);
+				}
+
 				return interaction.editReply({
-					content: "You have already signed in today!",
+					content: `You've already claimed today's reward.\nToday's Reward: ${rewardMsg}`,
 					flags: MessageFlags.Ephemeral,
 				});
 			} else if (diffDays > 5) {
@@ -72,7 +86,9 @@ module.exports = {
 		});
 
 		await interaction.editReply({
-			content: `Sign-in successful!\nStreak: ${streak}\nReward: ${reward}`,
+			content: `CLAIM SUCCESSFULLY!\nBonus Reward: ${inlineCode(
+				reward
+			)}\nCurrent Streak: ${streak} Days`,
 			flags: MessageFlags.Ephemeral,
 		});
 	},
