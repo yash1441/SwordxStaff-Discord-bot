@@ -56,7 +56,7 @@ module.exports = {
 			await lark.updateRecord(
 				process.env.DAILY_REWARDS_BASE,
 				process.env.DAILY_REWARDS_TABLE,
-				rewards.items[0].recordId,
+				rewards.items[0].record_id,
 				{
 					fields: { "Discord ID": userId },
 				}
