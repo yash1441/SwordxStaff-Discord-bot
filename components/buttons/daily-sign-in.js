@@ -1,13 +1,26 @@
 const { MessageFlags, inlineCode } = require("discord.js");
 const lark = require("../../utils/lark");
-const { Keyv } = require("keyv");
+const Database = require("better-sqlite3");
 const path = require("path");
 require("dotenv").config();
 
-const dbPath = path.join(__dirname, "../../db/signin.sqlite");
-const keyv = new Keyv(`sqlite://${dbPath}`);
+const db = new Database(path.join(__dirname, "../../db/checkins.sqlite"), {
+	verbose: console.log,
+});
 
-keyv.on("error", (err) => console.error("Keyv connection error:", err));
+db.exec(`
+  CREATE TABLE IF NOT EXISTS checkins (
+    user_id TEXT PRIMARY KEY NOT NULL,
+    username TEXT NOT NULL,
+    streak INTEGER NOT NULL DEFAULT 0,
+	last_checkin INTEGER NOT NULL,
+	rewards TEXT NOT NULL DEFAULT '[]',
+  )
+`);
+
+const getUserCheckin = (userId) => {
+	return db.prepare("SELECT * FROM checkins WHERE user_id = ?").get(userId);
+};
 
 module.exports = {
 	cooldown: 10,
@@ -18,80 +31,19 @@ module.exports = {
 		await interaction.deferReply({
 			flags: MessageFlags.Ephemeral,
 		});
+
 		const userId = interaction.user.id;
+		const username = interaction.user.username;
+
 		const now = new Date();
 
-		// Fetch user's last claim info from Keyv
-		let userRecord = await keyv.get(userId);
-		let streak = 1;
-		let lastClaim = userRecord?.lastClaim
-			? new Date(userRecord.lastClaim)
-			: null;
+		const currentDate = now.toISOString().split("T")[0];
+		const currentTimestamp = Math.floor(now.getTime() / 1000);
 
-		if (lastClaim) {
-			const diffDays = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24));
-			if (diffDays === 0) {
-				// Fetch today's reward for user's current streak
-				const rewards = await lark.listRecords(
-					process.env.DAILY_REWARDS_BASE,
-					process.env.DAILY_REWARDS_TABLE,
-					{
-						filter: `AND(CurrentValue.[Day]=${userRecord.streak}, CurrentValue.[Discord ID]="${userId}")`,
-					}
-				);
+		console.log(now, currentDate, currentTimestamp);
 
-				let rewardMsg = "No rewards available for today.";
-				if (rewards.total && rewards.items.length > 0) {
-					rewardMsg = inlineCode(rewards.items[0].fields.Reward);
-				}
-
-				return interaction.editReply({
-					content: `You've already claimed today's reward.\nToday's Reward: ${rewardMsg}`,
-					flags: MessageFlags.Ephemeral,
-				});
-			} else if (diffDays > 5) {
-				streak = 1;
-			} else {
-				streak = userRecord.streak + 1;
-			}
-		}
-
-		// Find available reward for this streak from Lark
-		const rewards = await lark.listRecords(
-			process.env.DAILY_REWARDS_BASE,
-			process.env.DAILY_REWARDS_TABLE,
-			{
-				filter: `AND(CurrentValue.[Day]=${streak}, CurrentValue.[Discord ID]="")`,
-			}
-		);
-
-		let reward;
-		if (rewards.total && rewards.items.length > 0) {
-			reward = rewards.items[0].fields.Reward;
-			// Mark reward as claimed in Lark
-			await lark.updateRecord(
-				process.env.DAILY_REWARDS_BASE,
-				process.env.DAILY_REWARDS_TABLE,
-				rewards.items[0].record_id,
-				{
-					fields: { "Discord ID": userId },
-				}
-			);
-		} else {
-			reward = "No rewards available for today.";
-		}
-
-		// Update user's streak and last claim in Keyv
-		await keyv.set(userId, {
-			streak,
-			lastClaim: now.toISOString(),
-		});
-
-		await interaction.editReply({
-			content: `CLAIM SUCCESSFULLY!\nBonus Reward: ${inlineCode(
-				reward
-			)}\nCurrent Streak: ${streak} Days`,
-			flags: MessageFlags.Ephemeral,
-		});
+		getUserCheckin(userId)
+			? console.log("User already exists in the database")
+			: console.log("User does not exist, creating new entry");
 	},
 };
