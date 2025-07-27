@@ -14,7 +14,7 @@ db.exec(`
     username TEXT NOT NULL,
     streak INTEGER NOT NULL DEFAULT 0,
 	last_checkin INTEGER NOT NULL,
-	rewards TEXT NOT NULL DEFAULT '[]',
+	rewards TEXT NOT NULL DEFAULT '[]'
   )
 `);
 
