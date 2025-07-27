@@ -19,7 +19,7 @@ db.exec(`
 `);
 
 module.exports = {
-	cooldown: 10,
+	cooldown: 1, // Change this later
 	data: {
 		name: "daily-sign-in",
 	},
@@ -36,7 +36,7 @@ module.exports = {
 
 		const message = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
-			: await updateCheckin(userId, username, currentDate);
+			: await updateCheckin(userId, currentDate);
 
 		await interaction.editReply({
 			content: message,
