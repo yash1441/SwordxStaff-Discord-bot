@@ -21,7 +21,7 @@ db.exec(`
 module.exports = {
 	cooldown: 1, // Change this later
 	data: {
-		name: "daily-sign-in",
+		name: "checkins",
 	},
 	async execute(interaction) {
 		await interaction.deferReply({
