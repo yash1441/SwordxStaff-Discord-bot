@@ -19,7 +19,8 @@ db.exec(`
     username TEXT NOT NULL,
     streak INTEGER NOT NULL DEFAULT 0,
 	last_checkin TEXT NOT NULL,
-	rewards TEXT NOT NULL DEFAULT '[]'
+	rewards TEXT NOT NULL DEFAULT '[]',
+	max_streak INTEGER NOT NULL DEFAULT 0
   )
 `);
 
@@ -213,28 +214,38 @@ async function updateCheckin(userId, currentDate) {
 		value: `${inlineCode(newStreak.toString())} Days`,
 	});
 
-	const response = await lark.listRecords(
-		process.env.DAILY_REWARDS_BASE,
-		process.env.DAILY_REWARDS_TABLE,
-		{
-			filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${newStreak})`,
-		}
-	);
+	// After calculating newStreak
+	const shouldGiveReward = newStreak > row.max_streak;
 
-	if (response && response.total > 0) {
-		rewards.push(response.items[0].fields.Reward);
-
-		const success = await lark.updateRecord(
+	if (shouldGiveReward) {
+		const response = await lark.listRecords(
 			process.env.DAILY_REWARDS_BASE,
 			process.env.DAILY_REWARDS_TABLE,
-			response.items[0].record_id,
-			{ fields: { "Discord ID": userId } }
+			{
+				filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${newStreak})`,
+			}
 		);
 
-		if (!success)
-			return {
-				content: `❌ Failed to update rewards for ${row.username}. Please try again later.`,
-			};
+		if (response && response.total > 0) {
+			rewards.push(response.items[0].fields.Reward);
+
+			const success = await lark.updateRecord(
+				process.env.DAILY_REWARDS_BASE,
+				process.env.DAILY_REWARDS_TABLE,
+				response.items[0].record_id,
+				{ fields: { "Discord ID": userId } }
+			);
+
+			if (!success)
+				return {
+					content: `❌ Failed to update rewards for ${row.username}. Please try again later.`,
+				};
+		}
+		// Update max_streak
+		db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
+			newStreak,
+			userId
+		);
 	}
 
 	embed.addFields({
