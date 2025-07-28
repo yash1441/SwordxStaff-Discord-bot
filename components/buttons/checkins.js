@@ -1,4 +1,9 @@
-const { MessageFlags, inlineCode, codeBlock } = require("discord.js");
+const {
+	MessageFlags,
+	EmbedBuilder,
+	inlineCode,
+	codeBlock,
+} = require("discord.js");
 const lark = require("../../utils/lark");
 const Database = require("better-sqlite3");
 const path = require("path");
