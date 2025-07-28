@@ -71,7 +71,7 @@ async function createCheckin(userId, username, currentDate) {
 	const embed = new EmbedBuilder()
 		.setColor(process.env.EMBED_COLOR)
 		.setTitle("Daily Check-in")
-		.addDescription(
+		.setDescription(
 			`✅ First check-in for ${username}! Your streak has started.`
 		)
 		.addFields({
@@ -151,7 +151,7 @@ async function updateCheckin(userId, currentDate) {
 	}
 
 	if (lastDate === currentDate) {
-		embed.addDescription(
+		embed.setDescription(
 			`⏳ ${row.username}, you've already checked in today. Please try again tomorrow.`
 		);
 		embed.addFields(
@@ -185,7 +185,7 @@ async function updateCheckin(userId, currentDate) {
 
 	if (isReset) {
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
-		embed.addDescription(
+		embed.setDescription(
 			`🔄 ${row.username}, your streak has been reset to 1 day.`
 		);
 		embed.addFields(
@@ -207,7 +207,7 @@ async function updateCheckin(userId, currentDate) {
 	}
 
 	// If streak continues
-	embed.addDescription(`✅ ${row.username}, you checked in!`);
+	embed.setDescription(`✅ ${row.username}, you checked in!`);
 	embed.addFields({
 		name: "Current Streak",
 		value: `${inlineCode(newStreak.toString())} Days`,
