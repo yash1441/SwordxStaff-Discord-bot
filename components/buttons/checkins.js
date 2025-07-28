@@ -34,13 +34,11 @@ module.exports = {
 		const now = new Date();
 		const currentDate = now.toISOString().split("T")[0];
 
-		const message = isNewUser(userId)
+		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
 			: await updateCheckin(userId, currentDate);
 
-		await interaction.editReply({
-			content: message,
-		});
+		await interaction.editReply(interactionReply);
 	},
 };
 
@@ -63,17 +61,45 @@ function daysBetween(date1, date2) {
 }
 
 async function createCheckin(userId, username, currentDate) {
-	// Fetch reward data from Lark
-	const rewards = ["reward1"];
+	const streak = 1; // Initial streak for new users
+
+	const response = await lark.listRecords(
+		process.env.DAILY_REWARDS_BASE,
+		process.env.DAILY_REWARDS_TABLE,
+		{
+			filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${streak})`,
+		}
+	);
+
+	if (!response || response.total === 0)
+		return {
+			content: `✅ First check-in for ${username}! Your streak has started.`,
+		};
+
+	const rewards = [response.items[0].fields.Reward];
+
+	const success = await lark.updateRecord(
+		process.env.DAILY_REWARDS_BASE,
+		process.env.DAILY_REWARDS_TABLE,
+		response.items[0].record_id,
+		{ fields: { "Discord ID": userId } }
+	);
+
+	if (!success)
+		return {
+			content: `❌ Failed to update rewards for ${username}. Please try again later.`,
+		};
 
 	db.prepare(
 		`
 		INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
 		VALUES (?, ?, ?, ?, ?)
 	`
-	).run(userId, username, 1, currentDate, JSON.stringify(rewards));
+	).run(userId, username, streak, currentDate, JSON.stringify(rewards));
 
-	return `✅ First check-in for ${username}! Your streak has started.`;
+	return {
+		content: `✅ First check-in for ${username}! Your streak has started.`,
+	};
 }
 
 async function updateCheckin(userId, currentDate) {
@@ -87,7 +113,7 @@ async function updateCheckin(userId, currentDate) {
 	const lastDate = row.last_checkin;
 
 	if (lastDate === currentDate)
-		return `⏳ ${row.username}, you've already checked in today.`;
+		return { content: `⏳ ${row.username}, you've already checked in today.` };
 
 	// Calculate streak
 	const days = daysBetween(lastCheckin, now);
@@ -104,5 +130,7 @@ async function updateCheckin(userId, currentDate) {
 		WHERE user_id = ?`
 	).run(newStreak, currentDate, JSON.stringify(rewards), userId);
 
-	return `✅ ${row.username}, you checked in!\n🔥 Streak: ${newStreak}\n🎁 Reward: ${newReward}`;
+	return {
+		content: `✅ ${row.username}, you checked in!\n🔥 Streak: ${newStreak}\n🎁 Reward: ${newReward}`,
+	};
 }
