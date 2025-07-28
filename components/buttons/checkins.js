@@ -1,4 +1,4 @@
-const { MessageFlags, inlineCode } = require("discord.js");
+const { MessageFlags, inlineCode, codeBlock } = require("discord.js");
 const lark = require("../../utils/lark");
 const Database = require("better-sqlite3");
 const path = require("path");
@@ -63,6 +63,15 @@ function daysBetween(date1, date2) {
 async function createCheckin(userId, username, currentDate) {
 	const streak = 1; // Initial streak for new users
 
+	const embed = new EmbedBuilder()
+		.setColor(process.env.EMBED_COLOR)
+		.setTitle("CLAIMED SUCCESSFULLY!")
+		.addFields({
+			name: "Current Streak",
+			value: `${inlineCode(streak.toString())} Day`,
+		})
+		.setTimestamp();
+
 	const response = await lark.listRecords(
 		process.env.DAILY_REWARDS_BASE,
 		process.env.DAILY_REWARDS_TABLE,
@@ -71,24 +80,32 @@ async function createCheckin(userId, username, currentDate) {
 		}
 	);
 
-	if (!response || response.total === 0)
-		return {
-			content: `✅ First check-in for ${username}! Your streak has started.`,
-		};
+	let rewards = [];
+	if (response && response.total > 0) {
+		rewards = [response.items[0].fields.Reward];
 
-	const rewards = [response.items[0].fields.Reward];
+		const success = await lark.updateRecord(
+			process.env.DAILY_REWARDS_BASE,
+			process.env.DAILY_REWARDS_TABLE,
+			response.items[0].record_id,
+			{ fields: { "Discord ID": userId } }
+		);
 
-	const success = await lark.updateRecord(
-		process.env.DAILY_REWARDS_BASE,
-		process.env.DAILY_REWARDS_TABLE,
-		response.items[0].record_id,
-		{ fields: { "Discord ID": userId } }
-	);
+		if (!success)
+			return {
+				content: `❌ Failed to update rewards for ${username}. Please try again later.`,
+			};
 
-	if (!success)
-		return {
-			content: `❌ Failed to update rewards for ${username}. Please try again later.`,
-		};
+		embed.addFields({
+			name: "Rewards",
+			value: codeBlock(rewards.join(", ") || "No rewards earned yet."),
+		});
+	} else {
+		embed.addFields({
+			name: "Rewards",
+			value: codeBlock("No rewards earned yet."),
+		});
+	}
 
 	db.prepare(
 		`
@@ -99,6 +116,7 @@ async function createCheckin(userId, username, currentDate) {
 
 	return {
 		content: `✅ First check-in for ${username}! Your streak has started.`,
+		embeds: [embed],
 	};
 }
 
@@ -113,7 +131,9 @@ async function updateCheckin(userId, currentDate) {
 	const lastDate = row.last_checkin;
 
 	if (lastDate === currentDate)
-		return { content: `⏳ ${row.username}, you've already checked in today.` };
+		return {
+			content: `⏳ ${row.username}, you've already checked in today. Please try again tomorrow.`,
+		};
 
 	// Calculate streak
 	const days = daysBetween(lastCheckin, now);
