@@ -24,6 +24,17 @@ module.exports = {
 						.setDescription("The user to delete checkins for")
 						.setRequired(true)
 				)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("query")
+				.setDescription("Send a query to the checkins database")
+				.addStringOption((option) =>
+					option
+						.setName("query")
+						.setDescription("The query to send to the database")
+						.setRequired(true)
+				)
 		),
 	async execute(interaction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -42,6 +53,23 @@ module.exports = {
 			} else {
 				await interaction.editReply({
 					content: `✅ Check-in entry deleted for ${user.username}.`,
+				});
+			}
+		} else if (interaction.options.getSubcommand() === "query") {
+			const query = interaction.options.getString("query");
+			let result;
+			try {
+				if (query.trim().toUpperCase().startsWith("SELECT")) {
+					result = db.prepare(query).all();
+				} else {
+					result = db.prepare(query).run();
+				}
+				await interaction.editReply({
+					content: `✅ Query executed successfully: ${JSON.stringify(result)}`,
+				});
+			} catch (err) {
+				await interaction.editReply({
+					content: `❌ Query error: ${err.message}`,
 				});
 			}
 		}
