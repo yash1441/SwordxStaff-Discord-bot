@@ -70,7 +70,10 @@ async function createCheckin(userId, username, currentDate) {
 
 	const embed = new EmbedBuilder()
 		.setColor(process.env.EMBED_COLOR)
-		.setTitle("CLAIMED SUCCESSFULLY!")
+		.setTitle("Daily Check-in")
+		.addDescription(
+			`✅ First check-in for ${username}! Your streak has started.`
+		)
 		.addFields({
 			name: "Current Streak",
 			value: `${inlineCode(streak.toString())} Day`,
@@ -120,12 +123,16 @@ async function createCheckin(userId, username, currentDate) {
 	).run(userId, username, streak, currentDate, JSON.stringify(rewards));
 
 	return {
-		content: `✅ First check-in for ${username}! Your streak has started.`,
 		embeds: [embed],
 	};
 }
 
 async function updateCheckin(userId, currentDate) {
+	const embed = new EmbedBuilder()
+		.setColor(process.env.EMBED_COLOR)
+		.setTitle("Daily Check-in")
+		.setTimestamp();
+
 	const row = db
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
@@ -135,27 +142,111 @@ async function updateCheckin(userId, currentDate) {
 
 	const lastDate = row.last_checkin;
 
-	if (lastDate === currentDate)
+	// Parse rewards safely
+	let rewards = [];
+	try {
+		rewards = JSON.parse(row.rewards);
+	} catch {
+		rewards = [];
+	}
+
+	if (lastDate === currentDate) {
+		embed.addDescription(
+			`⏳ ${row.username}, you've already checked in today. Please try again tomorrow.`
+		);
+		embed.addFields(
+			{
+				name: "Current Streak",
+				value: `${inlineCode(row.streak.toString())} Day(s)`,
+			},
+			{
+				name: "Rewards",
+				value: codeBlock(
+					rewards.length ? rewards.join(", ") : "No rewards earned yet."
+				),
+			}
+		);
+
 		return {
-			content: `⏳ ${row.username}, you've already checked in today. Please try again tomorrow.`,
+			embeds: [embed],
 		};
+	}
 
 	// Calculate streak
 	const days = daysBetween(lastCheckin, now);
 	const newStreak = days <= 5 ? row.streak + 1 : 1;
+	const isReset = newStreak === 1;
 
-	// Add a new reward
-	const rewards = JSON.parse(row.rewards);
-	const newReward = `reward${newStreak}`; // Get the reward based on the streak from Lark
-	rewards.push(newReward);
-
-	db.prepare(
+	const updateCheckin = db.prepare(
 		`UPDATE checkins
 		SET streak = ?, last_checkin = ?, rewards = ?
 		WHERE user_id = ?`
-	).run(newStreak, currentDate, JSON.stringify(rewards), userId);
+	);
+
+	if (isReset) {
+		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
+		embed.addDescription(
+			`🔄 ${row.username}, your streak has been reset to 1 day.`
+		);
+		embed.addFields(
+			{
+				name: "Current Streak",
+				value: `${inlineCode(newStreak.toString())} Day`,
+			},
+			{
+				name: "Rewards",
+				value: codeBlock(
+					rewards.length ? rewards.join(", ") : "No rewards earned yet."
+				),
+			}
+		);
+
+		return {
+			embeds: [embed],
+		};
+	}
+
+	// If streak continues
+	embed.addDescription(`✅ ${row.username}, you checked in!`);
+	embed.addFields({
+		name: "Current Streak",
+		value: `${inlineCode(newStreak.toString())} Days`,
+	});
+
+	const response = await lark.listRecords(
+		process.env.DAILY_REWARDS_BASE,
+		process.env.DAILY_REWARDS_TABLE,
+		{
+			filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${newStreak})`,
+		}
+	);
+
+	if (response && response.total > 0) {
+		rewards.push(response.items[0].fields.Reward);
+
+		const success = await lark.updateRecord(
+			process.env.DAILY_REWARDS_BASE,
+			process.env.DAILY_REWARDS_TABLE,
+			response.items[0].record_id,
+			{ fields: { "Discord ID": userId } }
+		);
+
+		if (!success)
+			return {
+				content: `❌ Failed to update rewards for ${row.username}. Please try again later.`,
+			};
+	}
+
+	embed.addFields({
+		name: "Rewards",
+		value: codeBlock(
+			rewards.length ? rewards.join(", ") : "No rewards earned yet."
+		),
+	});
+
+	updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 
 	return {
-		content: `✅ ${row.username}, you checked in!\n🔥 Streak: ${newStreak}\n🎁 Reward: ${newReward}`,
+		embeds: [embed],
 	};
 }
