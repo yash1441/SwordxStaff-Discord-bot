@@ -2,6 +2,7 @@ const {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	MessageFlags,
+	codeBlock,
 } = require("discord.js");
 const Database = require("better-sqlite3");
 const path = require("path");
@@ -33,6 +34,17 @@ module.exports = {
 					option
 						.setName("query")
 						.setDescription("The query to send to the database")
+						.setRequired(true)
+				)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("view")
+				.setDescription("View a user's checkins record")
+				.addUserOption((option) =>
+					option
+						.setName("user")
+						.setDescription("The user to view checkins for")
 						.setRequired(true)
 				)
 		),
@@ -70,6 +82,23 @@ module.exports = {
 			} catch (err) {
 				await interaction.editReply({
 					content: `❌ Query error: ${err.message}`,
+				});
+			}
+		} else if (interaction.options.getSubcommand() === "view") {
+			const user = interaction.options.getUser("user");
+			const checkin = db
+				.prepare("SELECT * FROM checkins WHERE user_id = ?")
+				.get(user.id);
+
+			if (!checkin) {
+				await interaction.editReply({
+					content: `❌ No check-in entry found for ${user.username}.`,
+				});
+			} else {
+				await interaction.editReply({
+					content: `✅ Check-in entry found for ${user.username}: ${codeBlock(
+						JSON.stringify(checkin)
+					)}`,
 				});
 			}
 		}

@@ -41,9 +41,12 @@ module.exports = {
 		const currentDate = now.toLocaleDateString("sv-SE", {
 			timeZone: "Asia/Singapore",
 		});
-		// currentDate will be in 'YYYY-MM-DD' format for UTC+8
+		const currentDateTime = now.toLocaleString("sv-SE", {
+			timeZone: "Asia/Singapore",
+		});
 
-		console.log(now, currentDate);
+		console.log("Date only:", currentDate); // e.g. 2025-07-29
+		console.log("Date and time:", currentDateTime); // e.g. 2025-07-29 15:42:10
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
