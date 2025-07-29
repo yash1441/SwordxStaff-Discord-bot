@@ -38,7 +38,12 @@ module.exports = {
 		const username = interaction.user.username;
 
 		const now = new Date();
-		const currentDate = now.toISOString().split("T")[0];
+		const currentDate = now.toLocaleDateString("sv-SE", {
+			timeZone: "Asia/Singapore",
+		});
+		// currentDate will be in 'YYYY-MM-DD' format for UTC+8
+
+		console.log(now, currentDate);
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
