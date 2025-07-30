@@ -53,7 +53,7 @@ module.exports = {
 				(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
 			);
 			return await interaction.editReply({
-				content: `⏳ The wishlist command is on cooldown for this server. Please wait ${waitTime} more seconds.`,
+				content: `⏳ 此伺服器上的按鈕正在冷卻中。請再等 ${waitTime} 秒。`,
 			});
 		}
 		serverCooldowns.set(process.env.GUILD_ID, now);
