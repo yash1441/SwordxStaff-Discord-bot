@@ -41,12 +41,6 @@ module.exports = {
 		const currentDate = now.toLocaleDateString("sv-SE", {
 			timeZone: "Asia/Singapore",
 		});
-		// const currentDateTime = now.toLocaleString("sv-SE", {
-		// 	timeZone: "Asia/Singapore",
-		// });
-
-		// console.log("Date only:", currentDate); // e.g. 2025-07-29
-		// console.log("Date and time:", currentDateTime); // e.g. 2025-07-29 15:42:10
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
@@ -227,6 +221,7 @@ async function updateCheckin(userId, currentDate) {
 
 	// After calculating newStreak
 	const shouldGiveReward = newStreak > row.max_streak;
+	let larkSuccess = false;
 
 	if (shouldGiveReward) {
 		const response = await lark.listRecords(
@@ -251,12 +246,14 @@ async function updateCheckin(userId, currentDate) {
 				return {
 					content: `❌ 無法為 ${row.username} 更新獎勵。請稍後再試。`,
 				};
+			if (response && success) {
+				larkSuccess = true;
+				db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
+					newStreak,
+					userId
+				);
+			}
 		}
-		// Update max_streak
-		db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-			newStreak,
-			userId
-		);
 	}
 
 	embed.addFields({
@@ -266,9 +263,14 @@ async function updateCheckin(userId, currentDate) {
 		),
 	});
 
-	updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
-
-	return {
-		embeds: [embed],
-	};
+	if (larkSuccess) {
+		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
+		return {
+			embeds: [embed],
+		};
+	} else {
+		return {
+			content: `❌ 無法為 ${row.username} 更新獎勵。請稍後再試。`,
+		};
+	}
 }
