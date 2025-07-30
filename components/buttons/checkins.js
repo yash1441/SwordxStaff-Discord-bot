@@ -46,7 +46,6 @@ module.exports = {
 
 		// --- Server-wide cooldown check ---
 		const SERVER_COOLDOWN_SECONDS = 5; // Set your desired cooldown (in seconds)
-		const now = Date.now();
 		const lastUsed = serverCooldowns.get(process.env.GUILD_ID) || 0;
 		if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
 			const waitTime = Math.ceil(
