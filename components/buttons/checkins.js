@@ -180,9 +180,9 @@ async function updateCheckin(userId, currentDate) {
 		const waitTime = Math.ceil(
 			(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
 		);
-		return await interaction.editReply({
+		return {
 			content: `⏳ 此伺服器上的按鈕正在冷卻中。請再等 ${waitTime} 秒。`,
-		});
+		};
 	}
 	serverCooldowns.set(process.env.GUILD_ID, now);
 
