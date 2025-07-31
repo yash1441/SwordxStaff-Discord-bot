@@ -171,20 +171,20 @@ async function updateCheckin(userId, currentDate) {
 		return {
 			embeds: [embed],
 		};
+	} else if (row.streak != 1 || row.streak != 2) {
+		// --- Server-wide cooldown check ---
+		const SERVER_COOLDOWN_SECONDS = 5; // Set your desired cooldown (in seconds)
+		const lastUsed = serverCooldowns.get(process.env.GUILD_ID) || 0;
+		if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
+			const waitTime = Math.ceil(
+				(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
+			);
+			return {
+				content: `⏳ 此伺服器上的按鈕正在冷卻中。請再等 ${waitTime} 秒。`,
+			};
+		}
+		serverCooldowns.set(process.env.GUILD_ID, now);
 	}
-
-	// --- Server-wide cooldown check ---
-	const SERVER_COOLDOWN_SECONDS = 5; // Set your desired cooldown (in seconds)
-	const lastUsed = serverCooldowns.get(process.env.GUILD_ID) || 0;
-	if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
-		const waitTime = Math.ceil(
-			(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
-		);
-		return {
-			content: `⏳ 此伺服器上的按鈕正在冷卻中。請再等 ${waitTime} 秒。`,
-		};
-	}
-	serverCooldowns.set(process.env.GUILD_ID, now);
 
 	// Calculate streak
 	const days = daysBetween(lastCheckin, now);
