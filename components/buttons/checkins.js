@@ -9,13 +9,16 @@ const Database = require("better-sqlite3");
 const path = require("path");
 require("dotenv").config();
 
-const db = new Database(path.join(__dirname, "../../db/checkins.sqlite"), {
-	verbose: console.log,
-});
+const checkinsDB = new Database(
+	path.join(__dirname, "../../db/checkins.sqlite"),
+	{
+		verbose: console.log,
+	}
+);
 
 const serverCooldowns = new Map(); // key: serverId, value: timestamp
 
-db.exec(`
+checkinsDB.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
     user_id TEXT PRIMARY KEY NOT NULL,
     username TEXT NOT NULL,
@@ -54,7 +57,7 @@ module.exports = {
 
 function isNewUser(userId) {
 	// Check if the user already has a check-in record
-	const existingCheckin = db
+	const existingCheckin = checkinsDB
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
 
@@ -118,12 +121,14 @@ async function createCheckin(userId, username, currentDate) {
 		});
 	}
 
-	db.prepare(
-		`
+	checkinsDB
+		.prepare(
+			`
 		INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
 		VALUES (?, ?, ?, ?, ?)
 	`
-	).run(userId, username, streak, currentDate, JSON.stringify(rewards));
+		)
+		.run(userId, username, streak, currentDate, JSON.stringify(rewards));
 
 	return {
 		embeds: [embed],
@@ -136,7 +141,7 @@ async function updateCheckin(userId, currentDate) {
 		.setTitle("日常簽到")
 		.setTimestamp();
 
-	const row = db
+	const row = checkinsDB
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
 
@@ -191,7 +196,7 @@ async function updateCheckin(userId, currentDate) {
 	const newStreak = days <= 5 ? row.streak + 1 : 1;
 	const isReset = newStreak === 1;
 
-	const updateCheckin = db.prepare(
+	const updateCheckin = checkinsDB.prepare(
 		`UPDATE checkins
 		SET streak = ?, last_checkin = ?, rewards = ?
 		WHERE user_id = ?`
@@ -200,10 +205,9 @@ async function updateCheckin(userId, currentDate) {
 	if (isReset) {
 		// Update max_streak to previous streak if it's higher
 		if (row.streak > row.max_streak) {
-			db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-				row.streak,
-				userId
-			);
+			checkinsDB
+				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
+				.run(row.streak, userId);
 		}
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		embed.setDescription(
@@ -263,10 +267,9 @@ async function updateCheckin(userId, currentDate) {
 				};
 			if (response && success) {
 				larkSuccess = true;
-				db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-					newStreak,
-					userId
-				);
+				checkinsDB
+					.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
+					.run(newStreak, userId);
 			}
 		}
 	}
