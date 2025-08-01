@@ -6,8 +6,21 @@ const {
 } = require("discord.js");
 const Database = require("better-sqlite3");
 const path = require("path");
-const db = new Database(path.join(__dirname, "../../db/checkins.sqlite"));
 require("dotenv").config();
+
+const checkinsDB = new Database(
+	path.join(__dirname, "../../db/checkins.sqlite")
+);
+
+const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
+
+codesDB.exec(`
+  CREATE TABLE IF NOT EXISTS codes (
+    reward TEXT PRIMARY KEY NOT NULL,
+    day INTEGER NOT NULL DEFAULT 0,
+    user_id TEXT
+  )
+`);
 
 module.exports = {
 	category: "moderation",
@@ -47,6 +60,23 @@ module.exports = {
 						.setDescription("The user to view checkins for")
 						.setRequired(true)
 				)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("transfer")
+				.setDescription("Temporary command to transfer checkins to sqlite")
+				.addStringOption((option) =>
+					option
+						.setName("base_id")
+						.setDescription("The base ID to transfer from")
+						.setRequired(true)
+				)
+				.addStringOption((option) =>
+					option
+						.setName("table_id")
+						.setDescription("The table ID to transfer from")
+						.setRequired(true)
+				)
 		),
 	async execute(interaction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -54,7 +84,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === "delete") {
 			const user = interaction.options.getUser("user");
 
-			const result = db
+			const result = checkinsDB
 				.prepare("DELETE FROM checkins WHERE user_id = ?")
 				.run(user.id);
 
@@ -72,9 +102,9 @@ module.exports = {
 			let result;
 			try {
 				if (query.trim().toUpperCase().startsWith("SELECT")) {
-					result = db.prepare(query).all();
+					result = checkinsDB.prepare(query).all();
 				} else {
-					result = db.prepare(query).run();
+					result = checkinsDB.prepare(query).run();
 				}
 				await interaction.editReply({
 					content: `✅ Query executed successfully: ${JSON.stringify(result)}`,
@@ -86,7 +116,7 @@ module.exports = {
 			}
 		} else if (interaction.options.getSubcommand() === "view") {
 			const user = interaction.options.getUser("user");
-			const checkin = db
+			const checkin = checkinsDB
 				.prepare("SELECT * FROM checkins WHERE user_id = ?")
 				.get(user.id);
 
@@ -101,6 +131,33 @@ module.exports = {
 					)}`,
 				});
 			}
+		} else if (interaction.options.getSubcommand() === "transfer") {
+			const baseId = interaction.options.getString("base_id");
+			const tableId = interaction.options.getString("table_id");
+			const response = await lark.listRecords(baseId, tableId);
+
+			if (!response || !response.items)
+				return await interaction.editReply({
+					content: "❌ Failed to fetch records from Lark.",
+				});
+
+			const insertCodes = codesDB.prepare(
+				`INSERT OR REPLACE INTO codes (reward, day, user_id) VALUES (?, ?, ?)`
+			);
+
+			let count = 0;
+			for (const item of response.items) {
+				const reward = item.fields.Reward;
+				const day = item.fields.Day;
+				const userId = item.fields["Discord ID"] || "";
+
+				insertCodes.run(reward, day, userId);
+				count++;
+			}
+
+			await interaction.editReply({
+				content: `✅ Transferred ${count} records from Lark to codes database.`,
+			});
 		}
 	},
 };
