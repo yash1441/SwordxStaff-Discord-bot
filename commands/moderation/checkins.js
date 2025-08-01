@@ -14,7 +14,10 @@ const checkinsDB = new Database(
 );
 
 const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
-const lines = fs.readFileSync("codes.txt", "utf-8").split("\n").filter(Boolean);
+const lines = fs
+	.readFileSync(path.join(__dirname, "../../db/codes.txt"), "utf-8")
+	.split("\n")
+	.filter(Boolean);
 
 codesDB.exec(`
   CREATE TABLE IF NOT EXISTS codes (
