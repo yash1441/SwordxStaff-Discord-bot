@@ -6,7 +6,7 @@ const {
 } = require("discord.js");
 const Database = require("better-sqlite3");
 const path = require("path");
-const lark = require("../../utils/lark");
+const fs = require("fs");
 require("dotenv").config();
 
 const checkinsDB = new Database(
@@ -14,6 +14,7 @@ const checkinsDB = new Database(
 );
 
 const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
+const lines = fs.readFileSync("codes.txt", "utf-8").split("\n").filter(Boolean);
 
 codesDB.exec(`
   CREATE TABLE IF NOT EXISTS codes (
@@ -66,18 +67,6 @@ module.exports = {
 			subcommand
 				.setName("transfer")
 				.setDescription("Temporary command to transfer checkins to sqlite")
-				.addStringOption((option) =>
-					option
-						.setName("base_id")
-						.setDescription("The base ID to transfer from")
-						.setRequired(true)
-				)
-				.addStringOption((option) =>
-					option
-						.setName("table_id")
-						.setDescription("The table ID to transfer from")
-						.setRequired(true)
-				)
 		),
 	async execute(interaction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -133,26 +122,13 @@ module.exports = {
 				});
 			}
 		} else if (interaction.options.getSubcommand() === "transfer") {
-			const baseId = interaction.options.getString("base_id");
-			const tableId = interaction.options.getString("table_id");
-			const response = await lark.listRecords(baseId, tableId);
-
-			if (!response || !response.items)
-				return await interaction.editReply({
-					content: "❌ Failed to fetch records from Lark.",
-				});
-
-			const insertCodes = codesDB.prepare(
+			const insert = codesDB.prepare(
 				`INSERT OR REPLACE INTO codes (reward, day, user_id) VALUES (?, ?, ?)`
 			);
 
 			let count = 0;
-			for (const item of response.items) {
-				const reward = item.fields.Reward;
-				const day = item.fields.Day;
-				const userId = item.fields["Discord ID"] || "";
-
-				insertCodes.run(reward, day, userId);
+			for (const line of lines) {
+				insert.run(line.trim(), 3, "");
 				count++;
 			}
 
