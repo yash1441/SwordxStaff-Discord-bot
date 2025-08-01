@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const Database = require("better-sqlite3");
 const path = require("path");
+const lark = require("../../utils/lark");
 require("dotenv").config();
 
 const checkinsDB = new Database(
