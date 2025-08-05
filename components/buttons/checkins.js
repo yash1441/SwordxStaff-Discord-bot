@@ -9,9 +9,14 @@ const path = require("path");
 require("dotenv").config();
 
 const checkinsDB = new Database(
-	path.join(__dirname, "../../db/checkins.sqlite")
+	path.join(__dirname, "../../db/checkins.sqlite"),
+	{
+		verbose: console.log,
+	}
 );
-const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
+const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"), {
+	verbose: console.log,
+});
 
 checkinsDB.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
@@ -98,7 +103,7 @@ async function createCheckin(userId, username, currentDate) {
 		console.log(
 			`Reward for streak ${streak} found: ${reward}. Updating local reward.`
 		);
-		updateLocalReward(streak, userId);
+		updateLocalReward(streak, userId, reward);
 		embed.addFields({
 			name: "獎勵",
 			value: codeBlock(rewards.join(", ")),
@@ -242,7 +247,7 @@ async function updateCheckin(userId, currentDate) {
 		const reward = getLocalReward(newStreak);
 		if (reward) {
 			rewards.push(reward);
-			updateLocalReward(newStreak, userId);
+			updateLocalReward(newStreak, userId, reward);
 			checkinsDB
 				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
 				.run(newStreak, userId);
@@ -287,11 +292,11 @@ function getLocalReward(day) {
 	return row ? row.reward : null;
 }
 
-function updateLocalReward(day, userId) {
+function updateLocalReward(day, userId, reward) {
 	const dayStr = String(day); // Ensure day is a string
 	codesDB
 		.prepare(
-			"UPDATE codes SET discord_id = ? WHERE day = ? AND discord_id = ''"
+			"UPDATE codes SET discord_id = ? WHERE day = ? AND discord_id = '' AND reward = ?"
 		)
-		.run(userId, dayStr);
+		.run(userId, dayStr, reward);
 }
