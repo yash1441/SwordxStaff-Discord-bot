@@ -14,10 +14,6 @@ const checkinsDB = new Database(
 );
 
 const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
-const lines = fs
-	.readFileSync(path.join(__dirname, "../../db/codes.txt"), "utf-8")
-	.split("\n")
-	.filter(Boolean);
 
 codesDB.exec(`
   CREATE TABLE IF NOT EXISTS codes (
@@ -65,11 +61,6 @@ module.exports = {
 						.setDescription("The user to view checkins for")
 						.setRequired(true)
 				)
-		)
-		.addSubcommand((subcommand) =>
-			subcommand
-				.setName("transfer")
-				.setDescription("Temporary command to transfer checkins to sqlite")
 		),
 	async execute(interaction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -124,20 +115,6 @@ module.exports = {
 					)}`,
 				});
 			}
-		} else if (interaction.options.getSubcommand() === "transfer") {
-			const insert = codesDB.prepare(
-				`INSERT OR REPLACE INTO codes (reward, day, user_id) VALUES (?, ?, ?)`
-			);
-
-			let count = 0;
-			for (const line of lines) {
-				insert.run(line.trim(), 3, "");
-				count++;
-			}
-
-			await interaction.editReply({
-				content: `✅ Transferred ${count} records from Lark to codes database.`,
-			});
 		}
 	},
 };
