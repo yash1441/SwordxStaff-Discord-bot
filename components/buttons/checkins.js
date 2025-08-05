@@ -152,6 +152,9 @@ async function updateCheckin(userId, currentDate) {
 		rewards = JSON.parse(row.rewards);
 	} catch {
 		rewards = [];
+		console.error(
+			`Failed to parse rewards for user ${userId}. Using empty array.`
+		);
 	}
 
 	if (lastDate === currentDate) {
