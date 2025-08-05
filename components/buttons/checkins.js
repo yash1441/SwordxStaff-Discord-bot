@@ -9,14 +9,9 @@ const path = require("path");
 require("dotenv").config();
 
 const checkinsDB = new Database(
-	path.join(__dirname, "../../db/checkins.sqlite"),
-	{
-		verbose: console.log,
-	}
+	path.join(__dirname, "../../db/checkins.sqlite")
 );
-const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"), {
-	verbose: console.log,
-});
+const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
 
 checkinsDB.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
