@@ -296,7 +296,7 @@ function updateLocalReward(day, userId, reward) {
 	const dayStr = String(day); // Ensure day is a string
 	const result = codesDB
 		.prepare(
-			"UPDATE codes SET discord_id = ? WHERE day = ? AND discord_id = '' AND reward = ?"
+			"UPDATE codes SET discord_id = ? WHERE day = ? AND discord_id = '' AND reward = ? LIMIT 1"
 		)
 		.run(userId, dayStr, reward);
 	console.log("Update result:", result);
